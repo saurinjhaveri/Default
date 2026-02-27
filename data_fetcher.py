@@ -204,6 +204,11 @@ class AngelBrokingFetcher(BaseDataFetcher):
                         len(resp["data"]), symbol,
                         chunk_from.date(), chunk_to.date(),
                     )
+                else:
+                    logger.warning(
+                        "Empty response for chunk %s→%s: %s",
+                        chunk_from.date(), chunk_to.date(), resp,
+                    )
             except Exception as exc:
                 logger.warning("API error for chunk %s→%s: %s", chunk_from.date(), chunk_to.date(), exc)
 
