@@ -141,6 +141,14 @@ class BacktestEngine:
                     trade.exit_reason = "target"
                     break
 
+        # Fallback EOD: if the loop exhausted all bars with no exit
+        # (e.g. signal fired in the last minute of the session)
+        if trade.exit_price is None and not window.empty:
+            last_bar = window.iloc[-1]
+            trade.exit_time   = last_bar["datetime"]
+            trade.exit_price  = last_bar["close"]
+            trade.exit_reason = "eod"
+
         # P&L
         if trade.exit_price is not None:
             if signal.direction == "LONG":
