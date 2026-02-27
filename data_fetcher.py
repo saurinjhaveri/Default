@@ -196,7 +196,9 @@ class AngelBrokingFetcher(BaseDataFetcher):
             }
 
             try:
+                logger.debug("getCandleData params: %s", params)
                 resp = self._api.getCandleData(params)
+                logger.debug("getCandleData response: %s", resp)
                 if resp and resp.get("data"):
                     all_rows.extend(resp["data"])
                     logger.debug(
