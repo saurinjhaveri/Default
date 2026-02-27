@@ -19,6 +19,7 @@ Angel Broking API reference: https://smartapi.angelbroking.com/docs
 """
 
 import logging
+import time
 import pandas as pd
 from abc import ABC, abstractmethod
 from datetime import datetime, timedelta
@@ -195,10 +196,21 @@ class AngelBrokingFetcher(BaseDataFetcher):
                 "todate":      chunk_to.strftime("%Y-%m-%d %H:%M"),
             }
 
-            try:
-                logger.debug("getCandleData params: %s", params)
-                resp = self._api.getCandleData(params)
-                logger.debug("getCandleData response: %s", resp)
+            for attempt in range(4):
+                try:
+                    logger.debug("getCandleData params: %s", params)
+                    resp = self._api.getCandleData(params)
+                    logger.debug("getCandleData response: %s", resp)
+                except Exception as exc:
+                    logger.warning("API error for chunk %s→%s: %s", chunk_from.date(), chunk_to.date(), exc)
+                    break
+
+                if resp and resp.get("errorcode") == "AB1004":
+                    wait = 2 ** (attempt + 1)   # 2, 4, 8, 16 s
+                    logger.warning("Rate-limited (AB1004); retrying in %ds (attempt %d/4)…", wait, attempt + 1)
+                    time.sleep(wait)
+                    continue
+
                 if resp and resp.get("data"):
                     all_rows.extend(resp["data"])
                     logger.debug(
@@ -211,8 +223,7 @@ class AngelBrokingFetcher(BaseDataFetcher):
                         "Empty response for chunk %s→%s: %s",
                         chunk_from.date(), chunk_to.date(), resp,
                     )
-            except Exception as exc:
-                logger.warning("API error for chunk %s→%s: %s", chunk_from.date(), chunk_to.date(), exc)
+                break
 
             chunk_from = chunk_to + timedelta(minutes=1)
 
