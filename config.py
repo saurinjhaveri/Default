@@ -62,7 +62,7 @@ TRADING_CONFIG = {
     "trading_end":   "15:00",
 
     # Trade management
-    "risk_reward_ratio": 3.0,         # Target = entry ± risk * 3
+    "risk_reward_ratio": 2.0,         # Target = entry ± risk * 2
 
     # Volume filter for engulfing confirmation
     "volume_multiplier": 1.25,        # Engulfing volume must be ≥ 1.25× rolling average
@@ -83,5 +83,5 @@ BACKTEST_CONFIG = {
     },
 
     "brokerage_per_trade": 40,        # INR charged per round trip (entry + exit)
-    "slippage_points":     2,         # Points of adverse slippage per fill
+    "slippage_points":     1,         # Points of adverse slippage per fill
 }
