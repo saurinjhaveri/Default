@@ -22,8 +22,11 @@ ANGEL_TOTP_SECRET = "YOUR_TOTP_SECRET_HERE"   # Base32 secret from Authenticator
 # Add new instruments here as NSE expands the strategy universe.
 #
 # Angel Broking index tokens:
-#   NIFTY 50   → 26000  (exchange: NSE)
-#   NIFTY BANK → 26009  (exchange: NSE)
+#   NIFTY 50   → 26000  (exchange: NSE)  [spot index — Angel API returns no OHLCV data]
+#   NIFTY BANK → 26009  (exchange: NSE)  [spot index — Angel API returns no OHLCV data]
+#
+# Angel Broking equity tokens:
+#   HDFCBANK   → 1333   (exchange: NSE)
 # ---------------------------------------------------------------------------
 INSTRUMENTS = {
     "NSE NIFTY": {
@@ -37,6 +40,12 @@ INSTRUMENTS = {
         "symbol": "Nifty Bank",
         "token": "26009",
         "trading_symbol": "BANKNIFTY",
+    },
+    "NSE HDFCBANK": {
+        "exchange": "NSE",
+        "symbol": "HDFC Bank",
+        "token": "1333",
+        "trading_symbol": "HDFCBANK",
     },
 }
 
@@ -68,8 +77,9 @@ BACKTEST_CONFIG = {
 
     # NSE lot sizes (used for P&L calculation in rupees)
     "lot_size": {
-        "NSE NIFTY":    50,
+        "NSE NIFTY":     50,
         "NSE BANKNIFTY": 15,
+        "NSE HDFCBANK":  550,
     },
 
     "brokerage_per_trade": 40,        # INR charged per round trip (entry + exit)

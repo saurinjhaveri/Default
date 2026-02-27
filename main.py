@@ -225,20 +225,20 @@ def run_backtest(
 def interactive_mode():
     _banner()
 
-    instruments = ["NSE NIFTY", "NSE BANKNIFTY"]
+    instruments = ["NSE NIFTY", "NSE BANKNIFTY", "NSE HDFCBANK"]
     print("Select instrument to backtest:")
     for i, name in enumerate(instruments, 1):
         print(f"  {i}. {name}")
 
     while True:
         try:
-            choice = int(input("\nEnter choice [1-2]: ").strip())
+            choice = int(input(f"\nEnter choice [1-{len(instruments)}]: ").strip())
             if 1 <= choice <= len(instruments):
                 instrument = instruments[choice - 1]
                 break
         except ValueError:
             pass
-        print("  Please enter 1 or 2.")
+        print(f"  Please enter 1 to {len(instruments)}.")
 
     print(f"\nSelected: {instrument}")
     print("\nEnter the backtest date range (format: YYYY-MM-DD):")
@@ -309,7 +309,7 @@ Examples:
 
     parser.add_argument(
         "--instrument", "-i",
-        choices = ["NSE NIFTY", "NSE BANKNIFTY"],
+        choices = ["NSE NIFTY", "NSE BANKNIFTY", "NSE HDFCBANK"],
         help    = "Instrument to backtest",
     )
     parser.add_argument(
