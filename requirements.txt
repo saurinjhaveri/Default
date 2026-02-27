@@ -9,6 +9,7 @@
 smartapi-python>=1.3.4   # Angel Broking official Python SDK
 pyotp>=2.9.0             # TOTP 2FA (required by Angel Broking login)
 logzero>=1.7.0           # Logging dependency of smartapi-python
+websocket-client>=1.6.0  # WebSocket dependency of smartapi-python
 
 # ── Data & numerics ──────────────────────────────────────────────────────────
 pandas>=2.0.0
