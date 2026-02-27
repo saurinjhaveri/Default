@@ -46,7 +46,12 @@ class BacktestEngine:
     # Single-day simulation
     # ------------------------------------------------------------------
 
-    def _simulate_day(self, day_data: pd.DataFrame, trade_date: date) -> List[Trade]:
+    def _simulate_day(
+        self,
+        day_data: pd.DataFrame,
+        trade_date: date,
+        allowed_directions: Optional[set] = None,
+    ) -> List[Trade]:
         day_trades: List[Trade] = []
 
         or_result = self.strategy.identify_opening_range(day_data)
@@ -61,6 +66,16 @@ class BacktestEngine:
         if not signals:
             logger.debug("No signals on %s", trade_date)
             return day_trades
+
+        # VIX direction filter: drop signals outside the allowed set
+        if allowed_directions is not None:
+            signals = [s for s in signals if s.direction in allowed_directions]
+            if not signals:
+                logger.debug(
+                    "No signals on %s after VIX direction filter (allowed: %s)",
+                    trade_date, allowed_directions,
+                )
+                return day_trades
 
         # Simulation data: everything from trading_start onward
         window = day_data[
@@ -169,6 +184,8 @@ class BacktestEngine:
         all_data: pd.DataFrame,
         start_date: date,
         end_date: date,
+        vix_data: Optional["pd.DataFrame"] = None,
+        vix_config: Optional[dict] = None,
     ) -> Dict:
         """
         Iterate over every trading day in [start_date, end_date] and collect
@@ -185,9 +202,51 @@ class BacktestEngine:
         )
         logger.info("Trading days in range: %d", len(trading_days))
 
+        use_vix = (
+            vix_data is not None
+            and not vix_data.empty
+            and vix_config
+            and vix_config.get("enabled")
+        )
+        min_vix = float(vix_config.get("min_vix", 0))     if vix_config else 0
+        max_vix = float(vix_config.get("max_vix", 9999))  if vix_config else 9999
+        dir_filter = bool(vix_config.get("direction_filter")) if vix_config else False
+
         for day in trading_days:
+            allowed_directions: Optional[set] = None
+
+            if use_vix:
+                day_row = vix_data[vix_data["date"] == day]
+                if not day_row.empty:
+                    vix_level = float(day_row.iloc[0]["vix"])
+
+                    if not (min_vix <= vix_level <= max_vix):
+                        logger.info(
+                            "Skipping %s — India VIX %.2f outside [%.1f, %.1f]",
+                            day, vix_level, min_vix, max_vix,
+                        )
+                        continue
+
+                    if dir_filter:
+                        prev_rows = vix_data[vix_data["date"] < day]
+                        if not prev_rows.empty:
+                            prev_vix = float(prev_rows.iloc[-1]["vix"])
+                            if vix_level > prev_vix:
+                                allowed_directions = {"SHORT"}
+                            elif vix_level < prev_vix:
+                                allowed_directions = {"LONG"}
+                            logger.debug(
+                                "%s  VIX=%.2f (prev=%.2f) → %s",
+                                day, vix_level, prev_vix,
+                                next(iter(allowed_directions)) if allowed_directions else "BOTH",
+                            )
+                else:
+                    logger.debug("No VIX data for %s — no filter applied", day)
+
             day_df = all_data[all_data["_date"] == day].drop(columns="_date")
-            self.trades.extend(self._simulate_day(day_df, day))
+            self.trades.extend(
+                self._simulate_day(day_df, day, allowed_directions=allowed_directions)
+            )
 
         return self._build_report()
 

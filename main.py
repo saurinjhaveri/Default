@@ -138,9 +138,9 @@ def run_backtest(
 ):
     from config import (
         ANGEL_API_KEY, ANGEL_CLIENT_ID, ANGEL_PASSWORD, ANGEL_TOTP_SECRET,
-        INSTRUMENTS, TRADING_CONFIG, BACKTEST_CONFIG,
+        INSTRUMENTS, TRADING_CONFIG, BACKTEST_CONFIG, VIX_CONFIG,
     )
-    from data_fetcher import AngelBrokingFetcher, CSVDataFetcher
+    from data_fetcher import AngelBrokingFetcher, CSVDataFetcher, fetch_vix_daily
     from strategy import ORBStrategy
     from backtest import BacktestEngine, export_trades_csv
 
@@ -197,6 +197,15 @@ def run_backtest(
 
         logger.info("Bars fetched: %d", len(df))
 
+        # ── Fetch India VIX (optional filter) ─────────────────────────
+        vix_data = None
+        if VIX_CONFIG.get("enabled"):
+            try:
+                logger.info("Fetching India VIX daily data (^INDIAVIX)…")
+                vix_data = fetch_vix_daily(from_dt, to_dt)
+            except Exception as exc:
+                logger.warning("VIX fetch failed (%s) — running without VIX filter", exc)
+
         # ── Run backtest ──────────────────────────────────────────────
         strategy = ORBStrategy(TRADING_CONFIG)
         engine   = BacktestEngine(strategy, bt_config)
@@ -204,6 +213,8 @@ def run_backtest(
             all_data   = df,
             start_date = datetime.strptime(from_date_str, "%Y-%m-%d").date(),
             end_date   = datetime.strptime(to_date_str,   "%Y-%m-%d").date(),
+            vix_data   = vix_data,
+            vix_config = VIX_CONFIG,
         )
 
         _print_report(report, instrument)

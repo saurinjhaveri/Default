@@ -310,3 +310,61 @@ class CSVDataFetcher(BaseDataFetcher):
 
     def disconnect(self) -> None:
         pass
+
+
+# ---------------------------------------------------------------------------
+# India VIX daily data (via yfinance — no API key required)
+# ---------------------------------------------------------------------------
+
+def fetch_vix_daily(from_date: datetime, to_date: datetime) -> pd.DataFrame:
+    """
+    Fetch India VIX daily closing levels from Yahoo Finance (ticker ^INDIAVIX).
+
+    Fetches 14 extra calendar days before from_date so the direction filter
+    always has a prior-day reference on the very first trade date.
+
+    Returns
+    -------
+    pd.DataFrame with columns [date (datetime.date), vix (float)],
+    sorted ascending.  Empty DataFrame on failure.
+
+    Requires
+    --------
+    pip install yfinance
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        raise ImportError(
+            "yfinance is required for VIX data.  Run:  pip install yfinance"
+        )
+
+    fetch_from = (from_date - timedelta(days=14)).date()
+    fetch_to   = (to_date   + timedelta(days=1)).date()
+
+    raw = yf.download(
+        "^INDIAVIX",
+        start       = fetch_from,
+        end         = fetch_to,
+        progress    = False,
+        auto_adjust = False,
+    )
+
+    if raw.empty:
+        logger.warning("No India VIX data returned from yfinance")
+        return pd.DataFrame()
+
+    # yfinance ≥ 0.2 may return multi-level columns for a single ticker
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw.columns = raw.columns.get_level_values(0)
+
+    df = raw[["Close"]].copy().reset_index()
+    df.columns = ["date", "vix"]
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+    df = df.sort_values("date").reset_index(drop=True)
+
+    logger.info(
+        "India VIX fetched: %d days (%s → %s)",
+        len(df), df["date"].iloc[0], df["date"].iloc[-1],
+    )
+    return df

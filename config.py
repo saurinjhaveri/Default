@@ -85,3 +85,24 @@ BACKTEST_CONFIG = {
     "brokerage_per_trade": 40,        # INR charged per round trip (entry + exit)
     "slippage_points":     1,         # Points of adverse slippage per fill
 }
+
+# ---------------------------------------------------------------------------
+# India VIX Filter
+# Data fetched automatically via yfinance (pip install yfinance).
+#
+# min_vix / max_vix  : Skip the entire trading day if India VIX closes
+#                      outside this band on the prior session.
+#                      < 12  → market too quiet, ORB breakouts tend to fail.
+#                      > 35  → extreme panic, stops get blown through by noise.
+#
+# direction_filter   : When True, bias direction using previous-day VIX trend:
+#                        VIX rising  → SHORT signals only  (fear increasing)
+#                        VIX falling → LONG  signals only  (fear subsiding)
+#                        VIX flat    → both directions allowed
+# ---------------------------------------------------------------------------
+VIX_CONFIG = {
+    "enabled":          True,
+    "min_vix":          12.0,
+    "max_vix":          35.0,
+    "direction_filter": True,
+}
